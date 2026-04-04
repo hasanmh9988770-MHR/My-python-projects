@@ -181,4 +181,4 @@ result_label.pack(pady=10)
 app.mainloop()
 
 ### Created by mehedi hasan rabby ##MHR
-### GEO CODING ### PYTHON 3.24 VERSION USED
+### GEO CODING ### PYTHON 3.14 VERSION USED
