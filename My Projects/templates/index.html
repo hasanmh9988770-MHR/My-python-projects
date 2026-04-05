@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Tic Tac Toe</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial;
+            background: radial-gradient(circle at top, #141e30, #243b55);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+
+        .container {
+            text-align: center;
+            padding: 30px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 20px;
+            backdrop-filter: blur(15px);
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 90px);
+            gap: 10px;
+            margin-top: 15px;
+            justify-content: center;
+        }
+
+        .cell {
+            width: 90px;
+            height: 90px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 15px;
+            font-size: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .cell:hover {
+            transform: scale(1.05);
+            background: rgba(255,255,255,0.2);
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            background: #00c6ff;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #0072ff;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+    <h1>🤖 AI Tic Tac Toe</h1>
+    <div id="status">Your turn</div>
+
+    <div class="board" id="board"></div>
+
+    <button onclick="resetGame()">Reset Game</button>
+</div>
+
+<script>
+let board = ["","","","","","","","",""];
+
+function render(){
+    const boardDiv = document.getElementById("board");
+    boardDiv.innerHTML = "";
+
+    board.forEach((val,i)=>{
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        cell.innerText = val;
+        cell.onclick = ()=>play(i);
+        boardDiv.appendChild(cell);
+    });
+}
+
+function play(i){
+    if(board[i] !== "") return;
+
+    board[i] = "X";
+    document.getElementById("status").innerText = "AI thinking...";
+
+    fetch("/move", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({board})
+    })
+    .then(res => res.json())
+    .then(data => {
+        board = data.board;
+        render();
+
+        document.getElementById("status").innerText =
+            data.winner ? data.winner + " wins!" : "Your turn";
+    });
+}
+
+function resetGame(){
+    fetch("/reset", {method:"POST"})
+    .then(res => res.json())
+    .then(data=>{
+        board = data.board;
+        document.getElementById("status").innerText = "Your turn";
+        render();
+    });
+}
+
+render();
+</script>
+
+</body>
+</html>
