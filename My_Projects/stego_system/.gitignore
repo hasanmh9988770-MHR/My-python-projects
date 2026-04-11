@@ -1,0 +1,17 @@
+# build outputs
+dist/
+build/
+release/
+*.spec
+
+# python cache
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store
+
+# virtual env
+venv/
+.venv/
+.venv2/
