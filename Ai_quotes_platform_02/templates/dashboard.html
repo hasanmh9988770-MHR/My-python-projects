@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>QuotesGram Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background: #000; color: white; font-family: sans-serif; margin: 0; }
+        .header { text-align: center; padding: 20px; border-bottom: 1px solid #222; position: sticky; top: 0; background: #000; z-index: 100; }
+        .stats { display: flex; justify-content: center; gap: 50px; padding: 20px; background: #111; margin: 10px; border-radius: 10px; }
+        .chart-container { max-width: 500px; margin: auto; background: #111; padding: 20px; border-radius: 10px; border: 1px solid #222; }
+        .feed { max-width: 500px; margin: 20px auto; }
+        .card { background: #111; padding: 20px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #222; }
+        .author { color: #888; text-align: right; margin-top: 10px; }
+        .like-btn { color: #ff3b5c; cursor: pointer; margin-top: 15px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="header">🔥 QuotesGram</div>
+
+<div class="stats">
+    <div>TOTAL: <span id="total">0</span></div>
+    <div>TODAY: <span id="today" style="color: #ff3b5c;">0</span></div>
+</div>
+
+<div class="chart-container">
+    <canvas id="myChart"></canvas>
+</div>
+
+<div class="feed" id="feed"></div>
+
+<script>
+let chartInstance;
+let lastQuoteText = ""; // Track the most recent quote to avoid duplicates/flicker
+
+async function updateAll() {
+    try {
+        // 1. Fetch data
+        const [feedRes, statsRes] = await Promise.all([
+            fetch("/api/live"),
+            fetch("/api/stats")
+        ]);
+
+        const quotes = await feedRes.json();
+        const stats = await statsRes.json();
+        const feedDiv = document.getElementById("feed");
+
+        // 2. ONLY update the feed if there is a NEW quote at the top
+        if (quotes.length > 0 && quotes[0].text !== lastQuoteText) {
+            lastQuoteText = quotes[0].text;
+
+            // Generate HTML for the feed
+            feedDiv.innerHTML = quotes.map(q => `
+                <div class="card">
+                    <div class="quote">“${q.text}”</div>
+                    <div class="author">— ${q.author}</div>
+                    <div class="like-btn" onclick="toggleLike(this)">❤️ Like</div>
+                </div>
+            `).join('');
+        }
+
+        // 3. Update Stats & Chart (These don't cause the "jump")
+        document.getElementById("total").innerText = stats.total_quotes;
+        document.getElementById("today").innerText = stats.today_quotes;
+        renderChart(stats.top_authors);
+
+    } catch (err) {
+        console.error("Sync error:", err);
+    }
+}
+
+function renderChart(authors) {
+    const ctx = document.getElementById('myChart').getContext('2d');
+    if (chartInstance) chartInstance.destroy();
+
+    chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: authors.map(a => a[0]),
+            datasets: [{
+                label: 'Top Authors',
+                data: authors.map(a => a[1]),
+                backgroundColor: '#ff3b5c',
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false, // Disabling animation stops the chart from "jumping"
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+}
+
+function toggleLike(btn) {
+    btn.innerText = btn.innerText === "❤️ Like" ? "❤️ Liked" : "❤️ Like";
+}
+
+// Check for updates every 5 seconds, but it will only "render" if data is new
+setInterval(updateAll, 5000);
+updateAll();
+</script>
+</body>
+</html>
