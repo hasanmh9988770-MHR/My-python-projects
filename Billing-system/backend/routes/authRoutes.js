@@ -1,27 +1,24 @@
 const express = require("express");
 const jwt = require("jsonwebtoken");
-const db = require("../models/db");
+const SECRET = require("../config/secret");
 
 const router = express.Router();
 
 router.post("/login", (req, res) => {
   const { username, password } = req.body;
 
-  db.get(
-    "SELECT * FROM users WHERE username=? AND password=?",
-    [username, password],
-    (err, user) => {
-      if (!user) return res.status(401).json({ msg: "Invalid login" });
+  // FIXED LOGIN
+  if (username === "Admin" && password === "9090") {
+    const token = jwt.sign(
+      { id: 1, role: "admin" },
+      SECRET,
+      { expiresIn: "1d" }
+    );
 
-      const token = jwt.sign(
-        { id: user.id, role: user.role },
-        "SECRET",
-        { expiresIn: "1d" }
-      );
+    return res.json({ token });
+  }
 
-      res.json({ token, role: user.role });
-    }
-  );
+  return res.status(401).json({ message: "Invalid Login" });
 });
 
 module.exports = router;
