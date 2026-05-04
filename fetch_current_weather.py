@@ -1,60 +1,66 @@
 import requests
+import os
+from dotenv import load_dotenv
 
-# 1. Setup
-api_key = "866d8cb601cdfc1a8117e8f70d9e3ded"
-base_url = "http://api.openweathermap.org/data/2.5/weather?"
+# Load environment variables
+load_dotenv()
 
-# 2. Input
+# Secure API config
+api_key = os.getenv("API_KEY")
+base_url = os.getenv("BASE_URL")
+
+if not api_key:
+    raise ValueError("❌ API_KEY not found in .env file")
+
+# Input
 city_name = input("Enter city name: ")
 
-# 3. URL Construction (Added units=metric for Celsius)
-complete_url = f"{base_url}appid={api_key}&q={city_name}&units=metric"
+# Build URL safely
+params = {
+    "appid": api_key,
+    "q": city_name,
+    "units": "metric"
+}
 
 try:
-    response = requests.get(complete_url)
+    response = requests.get(base_url, params=params)
     data = response.json()
 
-    # 4. Modern Python 3.10+ Pattern Matching
     match data.get("cod"):
         case 200:
             main = data["main"]
             weather = data["weather"][0]
+
             temp = main["temp"]
             desc = weather["description"]
 
-            print(f"\n✅ Success!")
+            print("\n✅ Success!")
             print(f"🌍 Weather in {city_name.capitalize()}:")
-            print(f"🌡️  Temperature: {temp}°C")
-            print(f"☁️  Sky: {desc.capitalize()}")
+            print(f"🌡️ Temperature: {temp}°C")
+            print(f"☁️ Sky: {desc.capitalize()}")
 
-            # --- ADD SMART SUGGESTIONS HERE ---
             print("\n💡 Suggestion:")
 
-            # Check for rain or clouds
             if "rain" in desc.lower():
                 print("☔ Grab an umbrella before you head out!")
             elif "cloud" in desc.lower() or "overcast" in desc.lower():
-                print("🌥️  It's a bit gloomy, but no umbrella needed yet.")
+                print("🌥️ It's a bit gloomy, but no umbrella needed yet.")
 
-            # Check for heat
             if temp > 30:
-                print("🔥 It's very hot! Stay hydrated and try to stay in the shade.")
+                print("🔥 It's very hot! Stay hydrated.")
             elif temp < 15:
-                print("🧣 It's chilly, better wear a jacket.")
+                print("🧣 It's chilly, wear a jacket.")
             else:
-                print("✨ The temperature is quite pleasant.")
-            # ----------------------------------
+                print("✨ Weather is pleasant.")
 
-        case 401:
+        case "401":
             print("❌ Invalid API Key.")
-        case 401:
-            print("❌ Invalid API Key. Please check your OpenWeather account.")
-
-        case 404:
-            print("❌ City not found. Check the spelling and try again.")
-
+        case "404":
+            print("❌ City not found.")
         case _:
-            print(f"⚠️ Something went wrong. Error code: {data.get('cod')}")
+            print(f"⚠️ Error: {data.get('cod')}")
 
+except requests.exceptions.RequestException as e:
+    print(f"🔌 Network Error: {e}")
 except Exception as e:
-    print(f"🔌 Connection Error: Make sure you are connected to the internet. ({e})")
+    print(f"⚠️ Unexpected Error: {e}")
